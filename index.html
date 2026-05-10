@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rock, Paper, Scissors</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --scissors-grad-1: hsl(39, 89%, 49%);
+      --scissors-grad-2: hsl(28, 76%, 44%);
+      --paper-grad-1: hsl(230, 89%, 62%);
+      --paper-grad-2: hsl(229, 64%, 46%);
+      --rock-grad-1: hsl(349, 71%, 52%);
+      --rock-grad-2: hsl(347, 75%, 35%);
+      --lizard-grad-1: hsl(261, 73%, 60%);
+      --lizard-grad-2: hsl(261, 51%, 44%);
+      --spock-grad-1: hsl(189, 59%, 53%);
+      --spock-grad-2: hsl(194, 58%, 42%);
+      --dark-text: hsl(229, 25%, 31%);
+      --score-text: hsl(229, 64%, 46%);
+      --header-outline: hsl(246, 11%, 37%);
+      --bg-grad-1: hsl(214, 47%, 23%);
+      --bg-grad-2: hsl(237, 48%, 15%);
+    }
+
+    html, body {
+      min-height: 100%;
+      font-family: 'Barlow Semi Condensed', sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, var(--bg-grad-1), var(--bg-grad-2));
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1.5rem;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ─── HEADER ─── */
+    .header {
+      width: 100%;
+      max-width: 700px;
+      border: 3px solid var(--header-outline);
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .logo {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+
+    .logo span {
+      color: white;
+      font-weight: 700;
+      font-size: clamp(1rem, 2.5vw, 1.5rem);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .score-box {
+      background: white;
+      border-radius: 8px;
+      padding: 0.5rem 2rem;
+      text-align: center;
+      min-width: 110px;
+    }
+
+    .score-label {
+      color: var(--score-text);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .score-value {
+      color: var(--dark-text);
+      font-size: clamp(2.5rem, 6vw, 3.5rem);
+      font-weight: 700;
+      line-height: 1;
+      transition: all 0.2s;
+    }
+
+    /* ─── GAME AREA ─── */
+    .game-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 700px;
+    }
+
+    /* ─── CHOICE SCREEN ─── */
+    .choice-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Triangle layout */
+    .triangle-layout {
+      position: relative;
+      width: 340px;
+      height: 300px;
+    }
+
+    .triangle-layout .bg-shape {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -45%);
+      width: 220px;
+      opacity: 0.3;
+    }
+
+    .triangle-layout .choice-btn {
+      position: absolute;
+    }
+    .triangle-layout .choice-btn:nth-child(2) { top: 0; left: 50%; transform: translateX(-50%); } /* scissors - top center in bonus */
+    .triangle-layout .choice-btn:nth-child(3) { top: 0; left: 50%; transform: translateX(-50%); } /* paper  - top left */
+
+    /* For standard RPS: paper top-left, scissors top-right, rock bottom-center */
+    .triangle-rps .choice-btn:nth-child(2) { top: 0; left: 0; }         /* paper */
+    .triangle-rps .choice-btn:nth-child(3) { top: 0; right: 0; }        /* scissors */
+    .triangle-rps .choice-btn:nth-child(4) { bottom: 0; left: 50%; transform: translateX(-50%); } /* rock */
+
+    /* Pentagon layout for RPSLS */
+    .pentagon-layout {
+      position: relative;
+      width: 360px;
+      height: 340px;
+    }
+
+    .pentagon-layout .bg-shape {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -48%);
+      width: 260px;
+      opacity: 0.3;
+    }
+
+    /* Pentagon positions (5 buttons in a circle) */
+    /* scissors=top, spock=upper-left, lizard=lower-left, rock=lower-right, paper=upper-right */
+    .pentagon-layout .choice-btn:nth-child(2) { top: 0; left: 50%; transform: translateX(-50%); }          /* scissors */
+    .pentagon-layout .choice-btn:nth-child(3) { top: 25%; left: 0; }                                        /* spock */
+    .pentagon-layout .choice-btn:nth-child(4) { bottom: 0; left: 12%; }                                     /* lizard */
+    .pentagon-layout .choice-btn:nth-child(5) { bottom: 0; right: 12%; }                                    /* rock */
+    .pentagon-layout .choice-btn:nth-child(6) { top: 25%; right: 0; }                                       /* paper */
+
+    /* ─── CHOICE BUTTON ─── */
+    .choice-btn {
+      border: none;
+      background: none;
+      cursor: pointer;
+      padding: 0;
+      border-radius: 50%;
+      transition: transform 0.15s ease, filter 0.15s ease;
+      display: block;
+    }
+
+    .choice-btn:hover { transform: scale(1.08) !important; filter: brightness(1.1); }
+    .choice-btn:focus-visible { outline: 4px solid white; outline-offset: 4px; }
+
+    .choice-circle {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      box-shadow: 0 6px 0 rgba(0,0,0,0.35);
+    }
+
+    /* Color variants */
+    .choice-circle.scissors { background: linear-gradient(to bottom, var(--scissors-grad-1), var(--scissors-grad-2)); }
+    .choice-circle.paper    { background: linear-gradient(to bottom, var(--paper-grad-1), var(--paper-grad-2)); }
+    .choice-circle.rock     { background: linear-gradient(to bottom, var(--rock-grad-1), var(--rock-grad-2)); }
+    .choice-circle.lizard   { background: linear-gradient(to bottom, var(--lizard-grad-1), var(--lizard-grad-2)); }
+    .choice-circle.spock    { background: linear-gradient(to bottom, var(--spock-grad-1), var(--spock-grad-2)); }
+
+    .choice-inner {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: linear-gradient(to bottom, #e5e7f2, #d8dae8);
+      box-shadow: inset 0 4px 0 rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .choice-inner img,
+    .choice-inner svg {
+      width: 48px;
+      height: 48px;
+    }
+
+    /* ─── RESULT SCREEN ─── */
+    .result-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+    }
+
+    .result-screen.active { display: flex; }
+
+    .picks-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4rem;
+      width: 100%;
+      margin-bottom: 3rem;
+    }
+
+    .pick-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .pick-label {
+      color: white;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      order: -1;
+    }
+
+    /* Winner glow ring */
+    .pick-circle-wrap {
+      position: relative;
+    }
+
+    .pick-circle-wrap.winner::before,
+    .pick-circle-wrap.winner::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      animation: winPulse 1.5s ease-out 0.3s both;
+    }
+
+    .pick-circle-wrap.winner::before {
+      width: 260px;
+      height: 260px;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+    }
+
+    .pick-circle-wrap.winner::after {
+      width: 340px;
+      height: 340px;
+      background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+    }
+
+    @keyframes winPulse {
+      from { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+      to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    .result-circle {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 0 rgba(0,0,0,0.35);
+    }
+
+    .result-inner {
+      width: 134px;
+      height: 134px;
+      border-radius: 50%;
+      background: linear-gradient(to bottom, #e5e7f2, #d8dae8);
+      box-shadow: inset 0 5px 0 rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .result-inner img,
+    .result-inner svg { width: 64px; height: 64px; }
+
+    .house-placeholder {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.25);
+      animation: placeholderPulse 0.8s ease-in-out infinite alternate;
+    }
+
+    @keyframes placeholderPulse {
+      from { background: rgba(0,0,0,0.2); }
+      to   { background: rgba(0,0,0,0.35); }
+    }
+
+    .outcome-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      min-width: 200px;
+    }
+
+    .outcome-text {
+      color: white;
+      font-size: clamp(2.5rem, 8vw, 3.5rem);
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .play-again-btn {
+      background: white;
+      color: var(--dark-text);
+      border: 2px solid transparent;
+      border-radius: 8px;
+      padding: 0.9rem 3rem;
+      font-family: 'Barlow Semi Condensed', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+
+    .play-again-btn:hover {
+      background: transparent;
+      color: white;
+      border-color: white;
+    }
+
+    /* Desktop layout for result - outcome in center */
+    @media (min-width: 640px) {
+      .picks-row {
+        align-items: flex-start;
+        gap: 3rem;
+      }
+
+      .pick-label {
+        order: -1;
+      }
+
+      .result-with-center {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        gap: 2rem;
+        width: 100%;
+      }
+
+      .pick-container:first-child { align-items: flex-end; }
+      .pick-container:last-child  { align-items: flex-start; }
+    }
+
+    /* ─── RULES BUTTON ─── */
+    .rules-btn {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: transparent;
+      border: 2px solid rgba(255,255,255,0.6);
+      color: white;
+      font-family: 'Barlow Semi Condensed', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 0.6rem 2rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      z-index: 10;
+    }
+
+    .rules-btn:hover { background: white; color: var(--dark-text); border-color: white; }
+    .rules-btn:focus-visible { outline: 2px solid white; outline-offset: 3px; }
+
+    /* ─── MODE TOGGLE ─── */
+    .mode-toggle {
+      position: fixed;
+      bottom: 2rem;
+      left: 2rem;
+      background: transparent;
+      border: 2px solid rgba(255,255,255,0.4);
+      color: rgba(255,255,255,0.7);
+      font-family: 'Barlow Semi Condensed', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 10;
+      max-width: 150px;
+      line-height: 1.3;
+    }
+    .mode-toggle:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.6); color: white; }
+
+    /* ─── MODAL ─── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 420px;
+      width: 100%;
+      position: relative;
+      animation: modalIn 0.2s ease;
+    }
+
+    @keyframes modalIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .modal-title {
+      color: var(--dark-text);
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem;
+      opacity: 0.3;
+      transition: opacity 0.2s;
+      line-height: 0;
+    }
+
+    .modal-close:hover { opacity: 0.7; }
+    .modal-close:focus-visible { outline: 2px solid var(--dark-text); border-radius: 4px; }
+
+    .modal-close svg { width: 20px; height: 20px; }
+
+    .rules-image { width: 100%; height: auto; }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .choice-btn { animation: fadeInUp 0.35s ease both; }
+    .choice-btn:nth-child(2) { animation-delay: 0s; }
+    .choice-btn:nth-child(3) { animation-delay: 0.05s; }
+    .choice-btn:nth-child(4) { animation-delay: 0.1s; }
+    .choice-btn:nth-child(5) { animation-delay: 0.15s; }
+    .choice-btn:nth-child(6) { animation-delay: 0.2s; }
+
+    .result-circle { animation: fadeInUp 0.4s ease both; }
+
+    /* ─── MOBILE ADJUSTMENTS ─── */
+    @media (max-width: 500px) {
+      .header { padding: 0.75rem 1rem; margin-bottom: 2rem; }
+      .score-box { padding: 0.5rem 1.25rem; min-width: 90px; }
+
+      .triangle-layout { width: 280px; height: 250px; }
+      .triangle-layout .choice-btn:nth-child(2) { top: 0; left: 0; }
+      .triangle-layout .choice-btn:nth-child(3) { top: 0; right: 0; }
+      .triangle-layout .choice-btn:nth-child(4) { bottom: 0; left: 50%; transform: translateX(-50%); }
+      .triangle-layout .bg-shape { width: 180px; }
+
+      .choice-circle { width: 110px; height: 110px; }
+      .choice-inner  { width: 80px;  height: 80px; }
+      .choice-inner img, .choice-inner svg { width: 38px; height: 38px; }
+
+      .pentagon-layout { width: 300px; height: 290px; }
+      .pentagon-layout .choice-btn:nth-child(3) { top: 22%; left: -4px; }
+      .pentagon-layout .choice-btn:nth-child(4) { bottom: 0; left: 8%; }
+      .pentagon-layout .choice-btn:nth-child(5) { bottom: 0; right: 8%; }
+      .pentagon-layout .choice-btn:nth-child(6) { top: 22%; right: -4px; }
+
+      /* Mobile result: stacked */
+      .result-with-center {
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      .picks-row {
+        flex-direction: row;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .result-circle { width: 140px; height: 140px; }
+      .result-inner  { width: 104px; height: 104px; }
+      .result-inner img, .result-inner svg { width: 50px; height: 50px; }
+
+      .house-placeholder { width: 140px; height: 140px; }
+
+      .pick-label { font-size: 0.75rem; }
+
+      .rules-btn { right: 50%; transform: translateX(50%); bottom: 1.5rem; }
+      .mode-toggle { display: none; }
+    }
+
+    /* Score flash animation */
+    @keyframes scoreFlash {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.4); color: hsl(140, 60%, 50%); }
+      100% { transform: scale(1); }
+    }
+
+    .score-value.flash { animation: scoreFlash 0.4s ease; }
+
+    /* Ripple on win */
+    .win-ripple {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.15);
+      animation: rippleOut 1.2s ease-out both;
+      pointer-events: none;
+    }
+
+    @keyframes rippleOut {
+      from { width: 180px; height: 180px; opacity: 1; }
+      to   { width: 400px; height: 400px; opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header" id="header">
+    <div class="logo" id="logoText">
+      <span>ROCK</span>
+      <span>PAPER</span>
+      <span>SCISSORS</span>
+    </div>
+    <div class="score-box">
+      <div class="score-label">Score</div>
+      <div class="score-value" id="scoreVal">0</div>
+    </div>
+  </header>
+
+  <!-- Main game -->
+  <main class="game-area">
+
+    <!-- Choice screen -->
+    <div class="choice-screen" id="choiceScreen">
+      <div class="triangle-layout triangle-rps" id="choiceLayout">
+        <!-- BG shape -->
+        <img class="bg-shape" id="bgShape" src="" alt="">
+        <!-- Buttons injected by JS -->
+      </div>
+    </div>
+
+    <!-- Result screen -->
+    <div class="result-screen" id="resultScreen">
+      <div class="result-with-center" id="resultLayout">
+        <div class="pick-container" id="yourPick">
+          <div class="pick-label">You Picked</div>
+          <div class="pick-circle-wrap" id="yourCircleWrap">
+            <div class="result-circle scissors" id="yourCircle">
+              <div class="result-inner"><svg></svg></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="outcome-col" id="outcomeCol">
+          <div class="outcome-text" id="outcomeText"></div>
+          <button class="play-again-btn" id="playAgainBtn">Play Again</button>
+        </div>
+
+        <div class="pick-container" id="housePick">
+          <div class="pick-label">The House Picked</div>
+          <div class="pick-circle-wrap" id="houseCircleWrap">
+            <div class="house-placeholder" id="housePlaceholder"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Rules button -->
+  <button class="rules-btn" id="rulesBtn">Rules</button>
+
+  <!-- Mode toggle -->
+  <button class="mode-toggle" id="modeToggle">+ Lizard Spock</button>
+
+  <!-- Rules modal -->
+  <div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Rules</h2>
+        <button class="modal-close" id="modalClose" aria-label="Close rules">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+            <path fill="#3B4262" fill-rule="evenodd" d="M16.97 0l2.122 2.121-7.425 7.425 7.425 7.425-2.121 2.12-7.425-7.424-7.425 7.425L0 16.97l7.425-7.425L0 2.121 2.121 0l7.425 7.425L16.971 0z" opacity=".25"/>
+          </svg>
+        </button>
+      </div>
+      <img class="rules-image" id="rulesImage" src="" alt="Game rules diagram">
+    </div>
+  </div>
+
+  <script>
+    // ─── SVG ICONS (inline) ───────────────────────────────────────────────────
+    const ICONS = {
+      rock: `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"><path fill="#3B4262" d="M45.06 12.22c-.642-8.096-9.734-7.269-9.734-7.269-3.837-6.765-9.832-1.865-9.832-1.865-4.606-6.63-10.38-.486-10.38-.486-9.957-1.074-9.571 7.066-9.571 7.066-.234 2.588 1.403 10.593 1.403 10.593-1.477-4.614-4.68-.784-4.68-.784-3.94 6.078-.975 9.405-.975 9.405 5.33 6.246 16.688 13.743 16.688 13.743 4.113 2.356 2.373 4.457 2.373 4.457l24.876-4.11.571-4.718c3.782-11.436-.739-26.032-.739-26.032z"/></svg>`,
+      paper: `<svg xmlns="http://www.w3.org/2000/svg" width="49" height="59" viewBox="0 0 49 59"><path fill="#3B4262" d="M47.125 11.832a2.922 2.922 0 00-1.232-.198c-.57.04-1.029.271-1.302.65-1.604 2.248-2.919 6.493-3.979 9.905-.486 1.577-1.14 3.688-1.612 4.69-.493-2.807.064-13.09.28-17.05l.003-.064c.15-2.751.17-3.234.138-3.446-.238-1.509-.843-2.5-1.799-2.943-.966-.45-2.22-.25-3.572.563-.677.41-.865 1.816-1.446 8.19l-.002.028c-.32 3.502-1.058 11.566-1.965 12.91-1.023-1.88-2.431-12.555-3.039-17.176-.425-3.236-.673-5.094-.84-5.655-.35-1.176-1.83-2.176-3.295-2.232-1.22-.06-2.22.56-2.698 1.638-.894.995-.578 4.292.41 12.102.47 3.718 1.44 11.395.83 12.257-1.219-.133-3.31-4.942-6.215-14.299-.816-2.62-1.068-3.408-1.318-3.753-.494-1.202-2.172-2.129-3.676-2.024a3.183 3.183 0 00-.377.049c-.787.156-2.584.881-2.2 4.226 1.06 4.637 2.213 8.041 3.331 11.346l.023.066c.669 1.98 1.302 3.85 1.89 5.925 1.385 4.9.846 7.94.84 7.975-.046.312-.143.503-.288.57a.556.556 0 01-.195.045c-.44.03-1.098-.26-1.437-.45-.776-1.482-4.636-8.544-8.134-9.524l-.126-.037-.127.012c-1.283.121-2.226.606-2.803 1.441-.914 1.32-.535 3.002-.444 3.34l.052.12c.028.051 2.834 5.165 3.268 7.544.374 2.04 2.311 4.25 3.869 6.026l.064.073c.508.58.946 1.083 1.292 1.548 4.519 4.713 11.665 8.677 11.723 8.71.892.657 1.387 1.293 1.44 1.84a.798.798 0 01-.16.58l-.155.162.988.96 18.853-1.324.804-3.684c2.486-10.402 1.967-19.272 1.958-19.33.01-.327.706-3.483 1.266-6.033l.017-.065c1.117-5.08 2.505-11.4 2.772-13.803.116-1.028-.542-1.972-1.675-2.401z"/></svg>`,
+      scissors: `<svg xmlns="http://www.w3.org/2000/svg" width="51" height="58" viewBox="0 0 51 58"><path fill="#3B4262" d="M13.971 25.702l6.012-8.415c-2.499-.415-7.088-.507-10.846 3.235C3.212 26.421.812 39.163.312 42.248L15.37 57.24c2.711-.232 14.713-1.827 26.279-13.34.122-.249 2.94-2.321.636-4.614-1.1-1.095-2.919-1.074-4.042.044-.572.57-1.461.577-2.021.02-.56-.557-.552-1.443.02-2.012l4.087-4.069c2.076-2.067.119-5.555-2.78-4.717l-3.345 2.851c-.611.53-1.52.439-2.022-.14-.519-.597-.408-1.503.183-2.013 11.687-10.208 9.98-8.979 17.5-15.995 2.809-2.329-.725-6.447-3.493-4.09L28.182 25.45c-.529.448-1.34.457-1.86-.02-.601-.517-.615-1.262-.222-1.85L38.787 3.944c1.854-2.5-1.795-5.277-3.749-2.757L16.28 27.307c-.452.65-1.364.8-1.985.345a1.377 1.377 0 01-.323-1.95z"/></svg>`,
+      lizard: `<svg xmlns="http://www.w3.org/2000/svg" width="63" height="60" viewBox="0 0 63 60"><path fill="#3B4262" d="M49.483 2.096c3.229-2 6.324-2.433 8.714-1.219 5.359 2.72 4.583 12.845 2.39 17.232-1.238 2.477-3.432 4.287-6.527 5.387-1.2 3.799-2.884 7.064-5.034 9.764a7.904 7.904 0 005.079 1.837h.09l3.02-2.982c.761-.75 1.994-.751 2.754 0 .76.75.76 1.968 0 2.718l-.267.264h.608c1.075 0 1.947.861 1.947 1.923 0 1.061-.872 1.922-1.947 1.922h-.608l.267.264c.76.75.76 1.968 0 2.719-.38.375-.878.563-1.376.563-.499 0-.997-.188-1.377-.563l-3.022-2.983h-.09a11.823 11.823 0 01-7.724-2.857c-.415.377-.843.738-1.284 1.083-3.732 2.92-8.294 4.617-13.627 5.082a12.08 12.08 0 01.343 6.352l-.02.09 2.325 3.66a1.998 1.998 0 01-.589 2.741 1.936 1.936 0 01-1.057.316 1.953 1.953 0 01-1.651-.912l-.206-.324-.13.605a1.966 1.966 0 01-1.913 1.562 1.95 1.95 0 01-.419-.046 1.984 1.984 0 01-1.498-2.36l.13-.605-.32.209a1.946 1.946 0 01-2.709-.597 1.998 1.998 0 01.59-2.74l3.617-2.353.02-.09a8.073 8.073 0 00-.713-5.394 44.773 44.773 0 01-4.797-.4c-4.684-.634-7.341 1.433-8.044 2.081-5.518 5.093-6.586 14.092-6.596 14.183a1.977 1.977 0 01-1.96 1.757 1.97 1.97 0 01-1.63-.867c-.087-.13-2.164-3.234-3.075-7.615-1.237-5.95.238-11.407 4.266-15.783a20.702 20.702 0 018.738-5.615l-.407.106a7.99 7.99 0 00-3.375-.747h-.09l-3.032 2.983a1.965 1.965 0 01-1.382.563c-.5 0-1-.188-1.382-.563a1.9 1.9 0 010-2.719l.268-.264h-.61c-1.08 0-1.954-.86-1.954-1.922 0-1.062.875-1.922 1.954-1.922h.61l-.268-.264a1.9 1.9 0 010-2.72c.763-.75 2-.75 2.764 0l3.032 2.983h.09a11.87 11.87 0 018.661 3.726l-.217-.223a22.914 22.914 0 015.352.095c4.946.67 8.99-.018 12.113-2.052a12.215 12.215 0 01-2.71-7.7v-.092L30.6 16.287a2.034 2.034 0 010-2.812 1.885 1.885 0 012.725 0l.265.273v-.621c0-1.099.862-1.989 1.926-1.989s1.927.89 1.927 1.989v.62l.265-.272a1.885 1.885 0 012.725 0c1.146 1.183.32 2.483 0 2.812l-2.99 3.086v.091c0 1.878.635 3.673 1.771 5.098 1.412-1.686 2.522-3.808 3.325-6.36-.587-1.625-1.5-5.473.828-9.837 1.22-2.285 3.564-4.687 6.117-6.269z"/></svg>`,
+      spock: `<svg xmlns="http://www.w3.org/2000/svg" width="45" height="59" viewBox="0 0 45 59"><path fill="#3B4262" d="M44.042 32.422l-.863-.86c-2.062-2.054-5.433-2.5-7.95-1.06l-5.376 3.059 1.12-24.502c0-2.054-1.678-3.726-3.743-3.726-.446 0-.875.079-1.273.222l.134-1.315c0-2.077-1.705-3.767-3.798-3.767-1.936 0-3.559 1.445-3.764 3.299l-3.45 20.75c-.045.282-.536.253-.588.075L10.416 7.962a3.658 3.658 0 00-3.502-2.629c-1.118 0-2.157.501-2.853 1.375a3.592 3.592 0 00-.69 3.08l.792 3.35a3.34 3.34 0 00-1.335.168 3.447 3.447 0 00-2.326 3.818L2.9 30.85c0 5.415.953 9.423 1.754 11.83a13.61 13.61 0 01.687 4.291c0 1.284-.179 2.562-.534 3.796l-1.86 6.482c-.104.366-.03.76.198 1.065.232.304.592.483.975.483h21.97a1.218 1.218 0 001.16-1.6c-.013-.031-1.033-3.169-.067-7.437 1.225-.99 5.514-4.462 7.054-5.862 2.546-2.315 9.521-9.468 9.817-9.772a1.21 1.21 0 00-.012-1.705z"/></svg>`
+    };
+
+    // ─── RULES IMAGES (SVG embedded as data URIs) ──────────────────────────────
+    const RULES_SVG_RPS = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="304" height="270"><defs><linearGradient id="a" x1="50%" x2="50%" y1="0%" y2="100%"><stop offset="0%" stop-color="#FFF" stop-opacity=".097"/><stop offset="100%" stop-color="#FFF" stop-opacity="0"/></linearGradient><linearGradient id="b" x1="50%" x2="50%" y1="0%" y2="100%"><stop offset="0%" stop-color="#FFF" stop-opacity=".097"/><stop offset="100%" stop-color="#FFF" stop-opacity="0"/></linearGradient></defs><g fill="none" fill-rule="evenodd"><ellipse cx="53.189" cy="54.815" fill="#B1B4C5" rx="53.189" ry="54.815"/><ellipse cx="53.189" cy="52.385" fill="url(#a)" rx="53.189" ry="52.385"/><g transform="translate(12.357 12.421)"><ellipse cx="40.832" cy="41.044" fill="#E1E4ED" rx="40.832" ry="41.044"/><path fill="#8A90AC" fill-rule="nonzero" d="M56.697 30.417a2.125 2.125 0 00-.904-.146c-.417.03-.755.201-.955.481-1.177 1.666-2.141 4.81-2.919 7.337-.357 1.169-.836 2.733-1.183 3.475-.362-2.08.047-9.697.206-12.63l.002-.047c.11-2.038.125-2.396.1-2.553-.174-1.118-.618-1.852-1.319-2.18-.708-.333-1.629-.186-2.62.417-.497.303-.635 1.345-1.061 6.067l-.002.02c-.235 2.595-.776 8.568-1.441 9.563-.75-1.392-1.784-9.3-2.23-12.722-.312-2.397-.494-3.774-.616-4.19-.257-.87-1.343-1.611-2.418-1.653-.895-.044-1.629.415-1.98 1.214-.655.736-.423 3.179.302 8.964.344 2.754 1.056 8.441.608 9.08-.893-.099-2.427-3.661-4.559-10.592-.598-1.942-.783-2.525-.967-2.78-.362-.891-1.593-1.578-2.696-1.5a2.314 2.314 0 00-.277.036c-.578.116-1.896.653-1.615 3.13.779 3.435 1.624 5.957 2.445 8.405l.016.05c.491 1.465.955 2.85 1.387 4.388 1.016 3.63.621 5.882.616 5.907-.034.232-.105.374-.211.423a.405.405 0 01-.143.033c-.322.023-.805-.193-1.055-.333-.568-1.098-3.4-6.33-5.967-7.055L25.15 41l-.093.008c-.942.09-1.634.45-2.057 1.068-.67.978-.393 2.224-.325 2.474l.038.09c.02.037 2.079 3.825 2.397 5.587.275 1.511 1.696 3.148 2.838 4.464l.047.054c.373.43.695.802.948 1.146 3.316 3.492 8.558 6.428 8.601 6.452.654.487 1.018.958 1.056 1.363a.595.595 0 01-.117.43l-.114.12.725.711 13.832-.98.59-2.73c1.823-7.705 1.442-14.275 1.436-14.319.007-.242.518-2.58.93-4.468l.011-.048c.82-3.763 1.838-8.444 2.034-10.225.085-.761-.398-1.46-1.23-1.779z"/></g><g transform="translate(196)"><ellipse cx="53.686" cy="54.815" fill="#B1B4C5" rx="53.686" ry="54.815"/><ellipse cx="53.686" cy="52.385" fill="url(#b)" rx="53.686" ry="52.385"/><g transform="translate(12.473 12.421)"><ellipse cx="41.214" cy="41.044" fill="#E1E4ED" rx="41.214" ry="41.044"/><path fill="#8A90AC" fill-rule="nonzero" d="M30.455 40.692l4.451-6.234c-1.85-.307-5.248-.375-8.031 2.397-4.388 4.37-6.165 13.809-6.535 16.093l11.15 11.105c2.008-.17 10.896-1.353 19.46-9.881.09-.184 2.177-1.72.471-3.418-.814-.81-2.162-.796-2.993.033a1.051 1.051 0 01-1.497.015 1.04 1.04 0 01.015-1.49l3.026-3.014c1.538-1.532.089-4.116-2.058-3.495l-2.477 2.112a1.065 1.065 0 01-1.497-.103c-.384-.443-.302-1.114.135-1.492 8.654-7.562 7.39-6.65 12.958-11.848 2.08-1.725-.536-4.776-2.586-3.03L40.978 40.506a1.051 1.051 0 01-1.378-.015c-.445-.383-.455-.934-.164-1.37l9.395-14.545c1.373-1.852-1.33-3.91-2.776-2.042L32.164 41.881a1.05 1.05 0 01-1.47.255 1.02 1.02 0 01-.24-1.444z"/></g></g><g transform="translate(98 160)"><ellipse cx="53.686" cy="54.815" fill="#B1B4C5" rx="53.686" ry="54.815"/><ellipse cx="53.686" cy="52.385" fill="url(#b)" rx="53.686" ry="52.385"/><g transform="translate(12.473 12.421)"><ellipse cx="41.214" cy="41.044" fill="#E1E4ED" rx="41.214" ry="41.044"/><path fill="#8A90AC" fill-rule="nonzero" d="M57.179 35.15c-.475-5.997-7.208-5.385-7.208-5.385-2.842-5.01-7.281-1.381-7.281-1.381-3.41-4.911-7.687-.36-7.687-.36-7.373-.796-7.087 5.234-7.087 5.234-.173 1.917 1.04 7.847 1.04 7.847-1.094-3.418-3.467-.581-3.467-.581-2.917 4.502-.721 6.967-.721 6.967 3.947 4.626 12.357 10.18 12.357 10.18 3.046 1.745 1.757 3.3 1.757 3.3l18.42-3.044.424-3.494c2.8-8.472-.547-19.284-.547-19.284z"/></g></g><text fill="#B1B4C5" font-family="BarlowSemiCondensed-Bold, Barlow Semi Condensed" font-size="13" font-style="condensed" font-weight="bold"><tspan x="134" y="31">BEATS</tspan></text><text fill="#B1B4C5" font-family="BarlowSemiCondensed-Bold, Barlow Semi Condensed" font-size="13" font-style="condensed" font-weight="bold"><tspan x="40" y="147">BEATS</tspan></text><text fill="#B1B4C5" font-family="BarlowSemiCondensed-Bold, Barlow Semi Condensed" font-size="13" font-style="condensed" font-weight="bold"><tspan x="235" y="147">BEATS</tspan></text><g fill="#B1B4C5" transform="matrix(-1 0 0 1 177 39)"><rect width="50" height="4" y="10" rx="2"/><path d="M41.963 2.015l8.59 8.728c.716.727.71 1.896-.013 2.616a1.833 1.833 0 01-2.6-.013l-8.59-8.728a1.855 1.855 0 01.013-2.616 1.833 1.833 0 012.6.013z"/><path d="M39.35 19.382l8.59-8.728a1.833 1.833 0 012.6-.013c.723.72.729 1.889.013 2.616l-8.59 8.728a1.833 1.833 0 01-2.6.013 1.855 1.855 0 01-.013-2.616z"/></g><g fill="#B1B4C5" transform="scale(1 -1) rotate(-55 -82.574 -131.195)"><rect width="50" height="4" y="10" rx="2"/><path d="M41.963 2.015l8.59 8.728c.716.727.71 1.896-.013 2.616a1.833 1.833 0 01-2.6-.013l-8.59-8.728a1.855 1.855 0 01.013-2.616 1.833 1.833 0 012.6.013z"/><path d="M39.35 19.382l8.59-8.728a1.833 1.833 0 012.6-.013c.723.72.729 1.889.013 2.616l-8.59 8.728a1.833 1.833 0 01-2.6.013 1.855 1.855 0 01-.013-2.616z"/></g><g fill="#B1B4C5" transform="rotate(-55 240.022 -103.651)"><rect width="50" height="4" y="10" rx="2"/><path d="M41.963 2.015l8.59 8.728c.716.727.71 1.896-.013 2.616a1.833 1.833 0 01-2.6-.013l-8.59-8.728a1.855 1.855 0 01.013-2.616 1.833 1.833 0 012.6.013z"/><path d="M39.35 19.382l8.59-8.728a1.833 1.833 0 012.6-.013c.723.72.729 1.889.013 2.616l-8.59 8.728a1.833 1.833 0 01-2.6.013 1.855 1.855 0 01-.013-2.616z"/></g></g></svg>`)}`;
+
+    // ─── GAME CONFIG ──────────────────────────────────────────────────────────
+    const MODES = {
+      rps: {
+        choices: ['paper', 'scissors', 'rock'],
+        beats: { scissors: ['paper'], paper: ['rock'], rock: ['scissors'] },
+        layout: 'triangle',
+        logoLines: ['ROCK', 'PAPER', 'SCISSORS']
+      },
+      rpsls: {
+        choices: ['scissors', 'spock', 'lizard', 'rock', 'paper'],
+        beats: {
+          scissors: ['paper', 'lizard'],
+          paper:    ['rock', 'spock'],
+          rock:     ['scissors', 'lizard'],
+          lizard:   ['paper', 'spock'],
+          spock:    ['scissors', 'rock']
+        },
+        layout: 'pentagon',
+        logoLines: ['ROCK', 'PAPER', 'SCISSORS', 'LIZARD', 'SPOCK']
+      }
+    };
+
+    // ─── BG SHAPES ────────────────────────────────────────────────────────────
+    const BG_TRIANGLE = `data:image/svg+xml,${encodeURIComponent('<svg width="313" height="278" xmlns="http://www.w3.org/2000/svg"><path stroke="#FFF" stroke-width="15" fill="none" opacity=".2" d="M156.5 262 300 8H13z"/></svg>')}`;
+    const BG_PENTAGON = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="329" height="313"><path fill="none" stroke="#FFF" stroke-width="15" d="M164.5 9.27L9.26 122.06l59.296 182.495h191.888L319.74 122.06 164.5 9.271z" opacity=".2"/></svg>')}`;
+
+    // ─── STATE ────────────────────────────────────────────────────────────────
+    let mode = localStorage.getItem('rps_mode') || 'rps';
+    let score = parseInt(localStorage.getItem('rps_score') || '0', 10);
+    let gameState = 'picking'; // 'picking' | 'result'
+
+    // ─── DOM REFS ─────────────────────────────────────────────────────────────
+    const choiceScreen   = document.getElementById('choiceScreen');
+    const resultScreen   = document.getElementById('resultScreen');
+    const choiceLayout   = document.getElementById('choiceLayout');
+    const bgShape        = document.getElementById('bgShape');
+    const scoreVal       = document.getElementById('scoreVal');
+    const logoText       = document.getElementById('logoText');
+    const rulesBtn       = document.getElementById('rulesBtn');
+    const modeToggle     = document.getElementById('modeToggle');
+    const modalOverlay   = document.getElementById('modalOverlay');
+    const modalClose     = document.getElementById('modalClose');
+    const rulesImage     = document.getElementById('rulesImage');
+    const yourCircle     = document.getElementById('yourCircle');
+    const yourCircleWrap = document.getElementById('yourCircleWrap');
+    const houseCircleWrap= document.getElementById('houseCircleWrap');
+    const housePlaceholder=document.getElementById('housePlaceholder');
+    const outcomeText    = document.getElementById('outcomeText');
+    const playAgainBtn   = document.getElementById('playAgainBtn');
+    const resultLayout   = document.getElementById('resultLayout');
+
+    // ─── INIT ─────────────────────────────────────────────────────────────────
+    function init() {
+      scoreVal.textContent = score;
+      renderMode();
+      showChoiceScreen();
+    }
+
+    function renderMode() {
+      const cfg = MODES[mode];
+      // Logo
+      logoText.innerHTML = cfg.logoLines.map(l => `<span>${l}</span>`).join('');
+      // Mode toggle
+      modeToggle.textContent = mode === 'rps' ? '+ Lizard Spock' : '− Lizard Spock';
+      // Rules image
+      rulesImage.src = mode === 'rps' ? RULES_SVG_RPS : buildBonusRulesImg();
+      // BG shape
+      bgShape.src = cfg.layout === 'triangle' ? BG_TRIANGLE : BG_PENTAGON;
+      // Layout class
+      choiceLayout.className = cfg.layout === 'triangle'
+        ? 'triangle-layout triangle-rps'
+        : 'pentagon-layout';
+      // Buttons
+      renderChoiceButtons();
+    }
+
+    function buildBonusRulesImg() {
+      // Use the bonus SVG from the assets - recreate inline
+      return `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 330" width="340" height="330"><style>text{font-family:sans-serif;font-size:11px;font-weight:bold;fill:#B1B4C5}</style><!-- Pentagon with 5 items --><polygon points="170,20 310,130 255,290 85,290 30,130" stroke="#B1B4C5" stroke-width="3" fill="none" opacity="0.6"/><!-- Scissors top --><circle cx="170" cy="20" r="40" fill="#B1B4C5"/><circle cx="170" cy="20" r="30" fill="#E1E4ED"/><!-- Spock upper-left --><circle cx="30" cy="130" r="40" fill="#B1B4C5"/><circle cx="30" cy="130" r="30" fill="#E1E4ED"/><!-- Lizard lower-left --><circle cx="85" cy="290" r="40" fill="#B1B4C5"/><circle cx="85" cy="290" r="30" fill="#E1E4ED"/><!-- Rock lower-right --><circle cx="255" cy="290" r="40" fill="#B1B4C5"/><circle cx="255" cy="290" r="30" fill="#E1E4ED"/><!-- Paper upper-right --><circle cx="310" cy="130" r="40" fill="#B1B4C5"/><circle cx="310" cy="130" r="30" fill="#E1E4ED"/><text x="170" y="82" text-anchor="middle">BEATS</text><text x="80" y="200" text-anchor="middle" transform="rotate(-55 80 200)">BEATS</text><text x="165" y="300" text-anchor="middle">BEATS</text><text x="260" y="200" text-anchor="middle" transform="rotate(55 260 200)">BEATS</text><text x="240" y="70" text-anchor="middle" transform="rotate(35 240 70)">BEATS</text></svg>`)}`;
+    }
+
+    function renderChoiceButtons() {
+      const cfg = MODES[mode];
+      // Remove old buttons (keep bg-shape which is index 0)
+      const oldBtns = choiceLayout.querySelectorAll('.choice-btn');
+      oldBtns.forEach(b => b.remove());
+
+      cfg.choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.setAttribute('aria-label', choice.charAt(0).toUpperCase() + choice.slice(1));
+        btn.innerHTML = `
+          <div class="choice-circle ${choice}">
+            <div class="choice-inner">${ICONS[choice]}</div>
+          </div>`;
+        btn.addEventListener('click', () => handlePick(choice));
+        choiceLayout.appendChild(btn);
+      });
+    }
+
+    // ─── GAME LOGIC ───────────────────────────────────────────────────────────
+    function handlePick(playerChoice) {
+      if (gameState !== 'picking') return;
+      gameState = 'result';
+
+      const cfg = MODES[mode];
+      const choices = cfg.choices;
+      const houseChoice = choices[Math.floor(Math.random() * choices.length)];
+
+      let result;
+      if (playerChoice === houseChoice) {
+        result = 'draw';
+      } else if (cfg.beats[playerChoice].includes(houseChoice)) {
+        result = 'win';
+      } else {
+        result = 'lose';
+      }
+
+      showResultScreen(playerChoice, houseChoice, result);
+    }
+
+    function showResultScreen(playerChoice, houseChoice, result) {
+      choiceScreen.style.display = 'none';
+      resultScreen.classList.add('active');
+
+      // Your circle
+      yourCircle.className = `result-circle ${playerChoice}`;
+      yourCircle.querySelector('.result-inner').innerHTML = ICONS[playerChoice];
+
+      // House: animate reveal after delay
+      houseCircleWrap.innerHTML = `<div class="house-placeholder" id="housePlaceholder"></div>`;
+      yourCircleWrap.classList.remove('winner');
+      houseCircleWrap.classList.remove('winner');
+
+      // Outcome col - hide until house reveals
+      outcomeText.textContent = '';
+      playAgainBtn.style.display = 'none';
+
+      setTimeout(() => {
+        // Reveal house pick
+        houseCircleWrap.innerHTML = `
+          <div class="result-circle ${houseChoice}" style="animation: fadeInUp 0.4s ease both">
+            <div class="result-inner">${ICONS[houseChoice]}</div>
+          </div>`;
+
+        // Show outcome
+        setTimeout(() => {
+          if (result === 'win') {
+            outcomeText.textContent = 'YOU WIN';
+            yourCircleWrap.classList.add('winner');
+            score++;
+          } else if (result === 'lose') {
+            outcomeText.textContent = 'YOU LOSE';
+            houseCircleWrap.classList.add('winner');
+            if (score > 0) score--;
+          } else {
+            outcomeText.textContent = 'DRAW';
+          }
+
+          playAgainBtn.style.display = '';
+          localStorage.setItem('rps_score', score);
+          scoreVal.textContent = score;
+          scoreVal.classList.add('flash');
+          setTimeout(() => scoreVal.classList.remove('flash'), 400);
+        }, 200);
+      }, 1000);
+    }
+
+    function showChoiceScreen() {
+      gameState = 'picking';
+      resultScreen.classList.remove('active');
+      choiceScreen.style.display = '';
+      renderChoiceButtons();
+    }
+
+    // ─── EVENTS ───────────────────────────────────────────────────────────────
+    playAgainBtn.addEventListener('click', showChoiceScreen);
+
+    rulesBtn.addEventListener('click', () => {
+      modalOverlay.classList.add('active');
+    });
+
+    modalClose.addEventListener('click', () => {
+      modalOverlay.classList.remove('active');
+    });
+
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) modalOverlay.classList.remove('active');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') modalOverlay.classList.remove('active');
+    });
+
+    modeToggle.addEventListener('click', () => {
+      mode = mode === 'rps' ? 'rpsls' : 'rps';
+      localStorage.setItem('rps_mode', mode);
+      renderMode();
+      showChoiceScreen();
+    });
+
+    // ─── START ────────────────────────────────────────────────────────────────
+    init();
+  </script>
+</body>
+</html>
